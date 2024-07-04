@@ -1,66 +1,249 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+SIMPLE PIC PAY:
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+After cloning the project, you need to follow these steps:
 
-## About Laravel
+Install Composer dependencies
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+```sh
+docker run --rm \
+    -u "$(id -u):$(id -g)" \
+    -v "$(pwd):/var/www/html" \
+    -w /var/www/html \
+    laravelsail/php83-composer:latest \
+    composer install --ignore-platform-reqs
+```
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+The project is using SAIL (https://laravel.com/docs/11.x/sail), below are the main commands:
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- To upload the project containers
+  ```sh
+    ./vendor/bin/sail up -d
+    ```
+- To bring down
+  ```sh
+    ./vendor/bin/sail down
+    ```
+- Access container
+  ```sh
+    ./vendor/bin/sail shell
+    ```
 
-## Learning Laravel
+------------------------------------
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+After upload the project containers run these commands:
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+- To create tables in database
+  ```sh
+    ./vendor/bin/sail artisan migrate
+    ```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- To seed database
+  ```sh
+    ./vendor/bin/sail artisan db:seed
+    ```
 
-## Laravel Sponsors
+- To create a queue worker
+  ```sh
+    ./vendor/bin/sail artisan queue:work
+    ```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+------------------------------------
+If everything is correct, you can now interact with the REST API via port 80 in your local environment. There is already
+a user to log in email: admin@gmail.com, password: password.
 
-### Premium Partners
+Here's a link from postman collection: https://www.postman.com/lunar-module-saganist-20405784/workspace/public/collection/17258694-f8a5ed3d-3e42-4d14-8cfb-d9647391094b?action=share&creator=17258694
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+The routes are :
 
-## Contributing
+LOGIN:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```sh
+POST api/login
 
-## Code of Conduct
+{
+  "email": "admin@gmail.com",
+  "password": "password"
+}
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Response
+{
+    "access_token": "1|Wn4fyCTSqkS5n3SdNwPsdzAdHYzgUULn5sWj4pSF784a0ea5"
+}
+```
 
-## Security Vulnerabilities
+--------------------------------------
+USER:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```sh
+POST api/users
 
-## License
+The response normally is status 201.
+The document_number can be sent with or without punctuation marks
+The user type will be defined from document_number lentgh,
+ if it's 14 the type is 2 = shop owner, if it's 11 it's 1 = customer.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Response
+{
+    "name": "Specter",
+    "email": "shopowner@gmail.com",
+    "password": "asdfasdf",
+    "document_number": "94.471.890/0001-63"
+}
+```
+
+```sh
+GET api/users?page=1&per_page=1
+
+Bearer token required in header
+Page and per page are not required, the default value is page = 1, per page = 10.
+The response normally is status 200.
+
+Response
+{
+    "current_page": 1,
+    "data": [
+        {
+            "id": 1,
+            "name": "Specter",
+            "type": 1,
+            "email": "specter@gmail.com",
+            "created_at": "2024-07-03 05:25:35",
+            "updated_at": "2024-07-03 05:25:35"
+        }
+    ],
+    "first_page_url": "http://localhost/api/users?page=1",
+    "from": 1,
+    "last_page": 1,
+    "last_page_url": "http://localhost/api/users?page=1",
+    "links": [
+        {
+            "url": null,
+            "label": "&laquo; Previous",
+            "active": false
+        },
+        {
+            "url": "http://localhost/api/users?page=1",
+            "label": "1",
+            "active": true
+        },
+        {
+            "url": null,
+            "label": "Next &raquo;",
+            "active": false
+        }
+    ],
+    "next_page_url": null,
+    "path": "http://localhost/api/users",
+    "per_page": 1,
+    "prev_page_url": null,
+    "to": 1,
+    "total": 1
+}
+```
+
+```sh
+GET api/users/1
+
+Bearer token required in header
+The response normally is status 200.
+
+Response
+{
+    "id": 1,
+    "name": "Specter",
+    "type": 1,
+    "email": "specter@gmail.com",
+    "created_at": "2024-07-03 05:25:35",
+    "updated_at": "2024-07-03 05:25:35"
+}
+```
+
+--------------------------------------
+TRANSACTION:
+```sh
+POST api/users/transactions
+
+Bearer token required in header
+The authenticated user is the payer always,
+ and a shop owner cannot pay a transaction.
+
+In the value field, the last two numbers are decimals,
+ minimum is 1(a cent) and maximum is 100000000(a million).
+
+Response
+{
+    "receiver_id": 2,
+    "value": 1000
+}
+```
+
+```sh
+GET api/users/transactions?page=1&per_page=1
+
+Bearer token required in header
+Page and per page are not required, the default value is page = 1, per page = 10.
+The response normally is status 200.
+
+Response
+{
+    "current_page": 1,
+    "data": [
+        {
+            "id": 10,
+            "payer_id": 9,
+            "receiver_id": 10,
+            "value": 1000,
+            "status": 2,
+            "completed_at": "2024-07-04 03:36:22",
+            "created_at": "2024-07-04 03:36:22",
+            "updated_at": "2024-07-04 03:36:22"
+        }
+    ],
+    "first_page_url": "http://localhost/api/users/transactions?page=1",
+    "from": 1,
+    "last_page": 1,
+    "last_page_url": "http://localhost/api/users/transactions?page=1",
+    "links": [
+        {
+            "url": null,
+            "label": "&laquo; Previous",
+            "active": false
+        },
+        {
+            "url": "http://localhost/api/users/transactions?page=1",
+            "label": "1",
+            "active": true
+        },
+        {
+            "url": null,
+            "label": "Next &raquo;",
+            "active": false
+        }
+    ],
+    "next_page_url": null,
+    "path": "http://localhost/api/users/transactions",
+    "per_page": 1,
+    "prev_page_url": null,
+    "to": 1,
+    "total": 1
+}
+```
+
+```sh
+GET api/users/transactions/1
+
+Bearer token required in header
+The response normally is status 200.
+
+Response
+{
+    "id": 10,
+    "payer_id": 9,
+    "receiver_id": 10,
+    "value": 1000,
+    "status": 2,
+    "completed_at": "2024-07-04 03:36:22",
+    "created_at": "2024-07-04 03:36:22",
+    "updated_at": "2024-07-04 03:36:22"
+}
+```

@@ -35,4 +35,6 @@ return [
         ],
     ],
 
+    'decimals' => env('DECIMALS', 2),
+    'currencyMultiplier' => env('CURRENCY_MULTIPLIER', 100),
 ];

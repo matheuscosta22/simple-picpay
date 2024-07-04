@@ -13,7 +13,6 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -40,30 +39,27 @@ class CompleteTransactionJob implements ShouldQueue
         /** @var Transaction $transaction */
         $transaction = Transaction::query()->find($this->transactionId);
         if (is_null($transaction->completed_at) && $transaction->status == TransactionStatus::NEW) {
-            DB::transaction(function () use ($transaction) {
+            /** @var Wallet $payerWallet */
+            $payerWallet = Wallet::query()
+                ->where('user_id', $transaction->payer_id)
+                ->first();
+            if (!$payerWallet) {
+                $transaction->cancel();
+                return;
+            }
 
-                /** @var Wallet $wallet */
-                $wallet = Wallet::query()
-                    ->where('user_id', $transaction->payer_id)
-                    ->first();
-                if (!$wallet) {
-                    $transaction->cancel();
-                    return;
-                }
+            /** @var Wallet $receiverWallet */
+            $receiverWallet = Wallet::query()
+                ->where('user_id', $transaction->receiver_id)
+                ->first();
+            if (!$receiverWallet) {
+                $transaction->cancel();
+                return;
+            }
 
-                $this->updateWalletBalance($wallet, $transaction, RegistryType::CASH_OUT);
-
-                /** @var Wallet $wallet */
-                $wallet = Wallet::query()
-                    ->where('user_id', $transaction->receiver_id)
-                    ->first();
-                if (!$wallet) {
-                    $transaction->cancel();
-                    return;
-                }
-
-                $this->updateWalletBalance($wallet, $transaction, RegistryType::CASH_IN);
-
+            DB::transaction(function () use ($transaction, $payerWallet, $receiverWallet) {
+                $this->updateWalletBalance($payerWallet, $transaction, RegistryType::CASH_OUT);
+                $this->updateWalletBalance($receiverWallet, $transaction, RegistryType::CASH_IN);
                 $transaction->complete();
                 $transaction->notifyShopOwner();
             }, 5);
@@ -80,9 +76,6 @@ class CompleteTransactionJob implements ShouldQueue
             throw new WalletBalanceCannotBeNegativeException();
         }
 
-        $wallet->balance = $balanceAfter;
-        $wallet->save();
-
         $walletRegistry = new WalletRegistry();
         $walletRegistry->wallet_id = $wallet->id;
         $walletRegistry->transaction_id = $transaction->id;
@@ -91,6 +84,9 @@ class CompleteTransactionJob implements ShouldQueue
         $walletRegistry->type = $registryType;
         $walletRegistry->completed_at = Carbon::now();
         $walletRegistry->save();
+
+        $wallet->balance = $balanceAfter;
+        $wallet->save();
     }
 
     public function failed(Throwable $throwable)
